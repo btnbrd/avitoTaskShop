@@ -7,7 +7,7 @@
 Проект запускается с помощью docker-compose. Для этого перейдите в корневую папку проекта и в консоли запустите команду:
 
 ```
-    docker-compose up
+    docker-compose up --build
 ```
 
 Api апускается на 8080 порту по умолчанию
@@ -28,7 +28,7 @@ go test -v github.com/btnbrd/avitoshop/tests -run '' tests/e2e_test.go
 ### `/api/auth`
 
 ```http request
-POST http://localhost:8080/api/auth
+POST http://localhost:8080/auth
 ```
 
 Аутентификация пользователя. Принимает JSON:
@@ -56,7 +56,7 @@ POST http://localhost:8080/api/auth
 ### `/api/sendCoin`
 
 ```http request
-POST http://localhost:8080/api/sendCoin
+POST http://localhost:8080/sendCoin
 ```
 
 Отправляет монеты другому пользователю. Принимает JSON:
@@ -82,7 +82,7 @@ POST http://localhost:8080/api/sendCoin
 ### `/api/info`
 
 ```http request
-GET http://localhost:8080/api/info
+GET http://localhost:8080/info
 ```
 
 Возвращает информацию о пользователе: баланс монет, инвентарь и историю транзакций.
@@ -124,7 +124,7 @@ GET http://localhost:8080/api/info
 ### `/api/buy/{item}`
 
 ```http request
-GET http://localhost:8080/api/buy/sword
+GET http://localhost:8080/buy/sword
 ```
 
 Покупает предмет за монеты.
