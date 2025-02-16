@@ -1,0 +1,6 @@
+db:
+  name: "avito_shop"
+  user: "avito"
+  password: "avito_pass"
+  host: "db"
+  port: 5432

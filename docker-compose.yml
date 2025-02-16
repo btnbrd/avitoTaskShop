@@ -1,0 +1,22 @@
+services:
+  db:
+    image: postgres:16
+    container_name: cont-db
+    restart: always
+    environment:
+      POSTGRES_USER: avito
+      POSTGRES_PASSWORD: avito_pass
+      POSTGRES_DB: avito_shop
+#      POSTGRES_HOST: db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+  app:
+    build: .
+    depends_on:
+      - db
+    ports:
+      - "8080:8080"
+volumes:
+  pg_data:

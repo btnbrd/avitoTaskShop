@@ -1,0 +1,7 @@
+#special config for test
+db:
+  name: "avito_shop"
+  user: "avito"
+  password: "avito_pass"
+  host: "localhost"
+  port: 5432
