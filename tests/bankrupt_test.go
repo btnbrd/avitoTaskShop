@@ -38,6 +38,7 @@ func TestBecameBankrupt(t *testing.T) {
 
 	var responseBody map[string]interface{}
 	err = json.NewDecoder(resp.Body).Decode(&responseBody)
+	log.Println(responseBody)
 	assert.NoError(t, err)
 	v, ok := responseBody["message"]
 	log.Println(v)
