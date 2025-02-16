@@ -89,7 +89,6 @@ func (app *APIServer) infoHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, resp)
 }
 
-// sendCoinHandler обрабатывает /api/sendCoin
 func (app *APIServer) sendCoinHandler(c *gin.Context) {
 	var req models.SendCoinRequest
 	if err := c.ShouldBindJSON(&req); err != nil || req.ToUser == "" || req.Amount <= 0 {
@@ -105,7 +104,6 @@ func (app *APIServer) sendCoinHandler(c *gin.Context) {
 	}
 	fromUserID := userIDInterface.(int)
 
-	// Ищем получателя
 	receiver, err := app.getUserByUsername(req.ToUser)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -121,7 +119,6 @@ func (app *APIServer) sendCoinHandler(c *gin.Context) {
 		return
 	}
 
-	// Выполняем транзакцию для перевода монет
 	tx, err := app.db.Begin()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"errors": "Ошибка начала транзакции"})
@@ -129,7 +126,6 @@ func (app *APIServer) sendCoinHandler(c *gin.Context) {
 	}
 	defer tx.Rollback()
 
-	// Проверяем баланс отправителя
 	var senderCoins int
 	err = tx.QueryRow("SELECT coins FROM users WHERE id=$1 FOR UPDATE", fromUserID).Scan(&senderCoins)
 	if err != nil {
@@ -141,21 +137,18 @@ func (app *APIServer) sendCoinHandler(c *gin.Context) {
 		return
 	}
 
-	// Обновляем баланс отправителя
 	_, err = tx.Exec("UPDATE users SET coins = coins - $1 WHERE id=$2", req.Amount, fromUserID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"errors": "Ошибка обновления баланса отправителя"})
 		return
 	}
 
-	// Обновляем баланс получателя
 	_, err = tx.Exec("UPDATE users SET coins = coins + $1 WHERE id=$2", req.Amount, receiver.ID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"errors": "Ошибка обновления баланса получателя"})
 		return
 	}
 
-	// Записываем операцию перевода
 	_, err = tx.Exec("INSERT INTO coin_transfers(from_user_id, to_user_id, amount) VALUES($1, $2, $3)", fromUserID, receiver.ID, req.Amount)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"errors": "Ошибка записи перевода"})
@@ -170,7 +163,6 @@ func (app *APIServer) sendCoinHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Монеты успешно отправлены"})
 }
 
-// buyHandler обрабатывает /api/buy/:item
 func (app *APIServer) buyHandler(c *gin.Context) {
 	item := c.Param("item")
 	price, exists := inventory.MerchItems[item]
@@ -179,7 +171,6 @@ func (app *APIServer) buyHandler(c *gin.Context) {
 		return
 	}
 
-	// Получаем пользователя из контекста
 	userIDInterface, existsCtx := c.Get("userID")
 	if !existsCtx {
 		c.JSON(http.StatusInternalServerError, gin.H{"errors": "Нет информации о пользователе"})
@@ -187,7 +178,6 @@ func (app *APIServer) buyHandler(c *gin.Context) {
 	}
 	userID := userIDInterface.(int)
 
-	// Начинаем транзакцию
 	tx, err := app.db.Begin()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"errors": "Ошибка начала транзакции"})
@@ -195,7 +185,6 @@ func (app *APIServer) buyHandler(c *gin.Context) {
 	}
 	defer tx.Rollback()
 
-	// Проверяем баланс
 	var coins int
 	err = tx.QueryRow("SELECT coins FROM users WHERE id=$1 FOR UPDATE", userID).Scan(&coins)
 	if err != nil {
@@ -207,14 +196,12 @@ func (app *APIServer) buyHandler(c *gin.Context) {
 		return
 	}
 
-	// Обновляем баланс пользователя
 	_, err = tx.Exec("UPDATE users SET coins = coins - $1 WHERE id=$2", price, userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"errors": "Ошибка обновления баланса"})
 		return
 	}
 
-	// Записываем покупку
 	_, err = tx.Exec("INSERT INTO purchases(user_id, item, price) VALUES($1, $2, $3)", userID, item, price)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"errors": "Ошибка записи покупки"})

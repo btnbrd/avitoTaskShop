@@ -14,6 +14,13 @@ import (
 //	db *sqlx.DB
 //}
 
+type DBInterface interface {
+	Exec(query string, args ...any) (sql.Result, error)
+	QueryRow(query string, args ...any) *sql.Row
+	Query(query string, args ...any) (*sql.Rows, error)
+	Begin() (*sql.Tx, error)
+}
+
 func NewDBConnection() (*sql.DB, error) {
 	conf, err := dbconfig.NewDBConfig()
 	if err != nil {

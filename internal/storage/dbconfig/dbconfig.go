@@ -1,9 +1,8 @@
 package dbconfig
 
 import (
-	"github.com/lpernett/godotenv"
-	"os"
-	"strconv"
+	"fmt"
+	"github.com/spf13/viper"
 )
 
 type DBConfig struct {
@@ -14,30 +13,22 @@ type DBConfig struct {
 	Port     int
 }
 
-//func NewDBConfig() (*DBConfig, error) {
-//	return &DBConfig{
-//		Host:     os.Getenv("DB_HOST"),
-//		Port:     5432,
-//		User:     os.Getenv("DB_USER"),
-//		Password: os.Getenv("DB_PASSWORD"),
-//		Name:     os.Getenv("DB_NAME"),
-//	}, nil
-//}
-
 func NewDBConfig() (*DBConfig, error) {
 
-	err := godotenv.Load()
+	viper.SetConfigName("config")
+	viper.SetConfigType("yaml")
+	viper.AddConfigPath(".")
+	err := viper.ReadInConfig() // Читаем конфигурацию
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error reading config file: %w", err)
 	}
 
-	name := os.Getenv("DB_NAME")
-	user := os.Getenv("DB_USER")
-	password := os.Getenv("DB_PASSWORD")
-	host := os.Getenv("DB_HOST")
-	portString := os.Getenv("DB_PORT")
-	port, _ := strconv.Atoi(portString)
+	var dbConfig DBConfig
+	err = viper.UnmarshalKey("db", &dbConfig)
+	if err != nil {
+		return nil, fmt.Errorf("error unmarshalling config: %w", err)
+	}
 
-	return &DBConfig{Name: name, User: user, Password: password, Host: host, Port: port}, nil
+	return &dbConfig, nil
 
 }

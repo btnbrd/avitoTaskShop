@@ -6,11 +6,12 @@ import (
 	"github.com/btnbrd/avitoshop/internal/models"
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
+	"log"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/golang-jwt/jwt/v5"
-	"time"
 )
 
 var jwtSecret = []byte("supersecretkey")
@@ -21,20 +22,21 @@ type Claims struct {
 	jwt.RegisteredClaims
 }
 
-func auth(c *gin.Context) {
-	c.String(http.StatusOK, "auth")
-}
+//func auth(c *gin.Context) {
+//	c.String(http.StatusOK, "auth")
+//}
 
-func (app *APIServer) authHandler(c *gin.Context) {
+func (app *APIServer) AuthHandler(c *gin.Context) {
+	log.Println("authhandler")
 	var req models.AuthRequest
 	if err := c.ShouldBindJSON(&req); err != nil || req.Username == "" || req.Password == "" {
+		log.Println("Invalid request:", err) // Отладочная информация
 		c.JSON(http.StatusBadRequest, gin.H{"errors": "Неверный запрос"})
 		return
 	}
 
 	user, err := app.getUserByUsername(req.Username)
 	if err != nil {
-		// Если не найден – создаём нового
 		if err == sql.ErrNoRows {
 			user, err = app.createUser(req.Username, req.Password)
 			if err != nil {
@@ -48,12 +50,13 @@ func (app *APIServer) authHandler(c *gin.Context) {
 	} else {
 		// Сравниваем пароль
 		if bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password)) != nil {
+			log.Println("Invalid credentials") // Отладочная информация
 			c.JSON(http.StatusUnauthorized, gin.H{"errors": "Неверные учетные данные"})
 			return
 		}
 	}
+
 	fmt.Printf("%+v\n", user)
-	// Создаём JWT-токен
 	expirationTime := time.Now().Add(24 * time.Hour)
 	claims := &Claims{
 		UserID:   user.ID,
@@ -70,7 +73,6 @@ func (app *APIServer) authHandler(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, models.AuthResponse{Token: tokenString})
 }
-
 func (app *APIServer) getUserByUsername(username string) (*models.User, error) {
 	row := app.db.QueryRow("SELECT id, username, password, coins FROM users WHERE username=$1", username)
 	var u models.User
@@ -102,7 +104,6 @@ func (app *APIServer) createUser(username string, password string) (*models.User
 	}, nil
 }
 
-// AuthMiddleware проверяет JWT и устанавливает userID и username в контекст
 func (app *APIServer) AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
@@ -127,7 +128,6 @@ func (app *APIServer) AuthMiddleware() gin.HandlerFunc {
 			c.Abort()
 			return
 		}
-		// Сохраняем идентификатор и имя пользователя в контексте
 		c.Set("userID", claims.UserID)
 		c.Set("username", claims.Username)
 		c.Next()
